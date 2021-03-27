@@ -108,8 +108,7 @@ void FloatingBase::UpdateDynamics() {
   }
 }
 
-void FloatingBase::GetDiscretizeDynamics(Eigen::Matrix<double, 13, 13>& A_discrete,
-                                         Eigen::Matrix<double, 13, 12>& B_discrete) {
+void FloatingBase::DiscretizeDynamics() {
   // Combine A and B matrix into one super 25x25 matrix.
   Eigen::Matrix<double, 25, 25> AB_continuous;
   Eigen::Matrix<double, 25, 25> exponent_matrix;
@@ -117,6 +116,6 @@ void FloatingBase::GetDiscretizeDynamics(Eigen::Matrix<double, 13, 13>& A_discre
   AB_continuous.block(0, 13, 13, 12) = B_continuous_;
   AB_continuous = 0.030 * AB_continuous;  // 30 ms discretization.
   exponent_matrix = AB_continuous.exp();
-  A_discrete = exponent_matrix.block(0, 0, 13, 13);
-  B_discrete = exponent_matrix.block(0, 13, 13, 12);
+  A_discrete_ = exponent_matrix.block(0, 0, 13, 13);
+  B_discrete_ = exponent_matrix.block(0, 13, 13, 12);
 }

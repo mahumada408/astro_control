@@ -90,6 +90,22 @@ class FloatingBase {
     foot_count
   };
 
+  enum ControlsInputs {
+    f_fl_x = 0,
+    f_fl_x = 1,
+    f_fl_x = 2,
+    f_fl_x = 3,
+    f_fl_x = 4,
+    f_fl_x = 5,
+    f_fl_x = 6,
+    f_fl_x = 7,
+    f_fl_x = 8,
+    f_fl_x = 9,
+    f_fl_x = 10,
+    f_fl_x = 11,
+    control_count
+  };
+
   FloatingBase() {}
   FloatingBase(double mass, double Ixx, double Iyy, double Izz);
   ~FloatingBase() {}
@@ -105,13 +121,17 @@ class FloatingBase {
   // x_dot = Ax + Bu
   void UpdateDynamics();
 
-  void GetDiscretizeDynamics(Eigen::Matrix<double, 13, 13>& A_discrete, Eigen::Matrix<double, 13, 12>& B_discrete);
+  void DiscretizeDynamics();
 
   Eigen::Matrix<double, 13, 1> RobotState() { return robo_state_; }
 
   Eigen::Matrix<double, 13, 13> A() { return A_continuous_; }
 
   Eigen::Matrix<double, 13, 12> B() { return B_continuous_; }
+
+  Eigen::Matrix<double, 13, 13> A_dt() { return A_discrete_; }
+
+  Eigen::Matrix<double, 13, 12> B_dt() { return B_discrete_; }
 
   const std::vector<Eigen::Vector3d> foot_positions() { return foot_positions_; }
 

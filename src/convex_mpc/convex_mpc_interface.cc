@@ -77,34 +77,6 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
     }
   }
 
-  // // FL
-  // foot_eig.translation().setZero();
-  // tf::poseMsgToEigen(msg.pose[8], calf);
-  // foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
-  // foot_eig.rotate(calf.rotation());
-  // foot_poses_[FloatingBase::Foot::fl] = foot_eig;
-
-  // // FR
-  // foot_eig.translation().setZero();
-  // tf::poseMsgToEigen(msg.pose[11], calf);
-  // foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
-  // foot_eig.rotate(calf.rotation());
-  // foot_poses_[FloatingBase::Foot::fr] = foot_eig;
-
-  // // RL
-  // foot_eig.translation().setZero();
-  // tf::poseMsgToEigen(msg.pose[14], calf);
-  // foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
-  // foot_eig.rotate(calf.rotation());
-  // foot_poses_[FloatingBase::Foot::rl] = foot_eig;
-
-  // // RR
-  // foot_eig.translation().setZero();
-  // tf::poseMsgToEigen(msg.pose[17], calf);
-  // foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
-  // foot_eig.rotate(calf.rotation());
-  // foot_poses_[FloatingBase::Foot::rr] = foot_eig;
-
   controller_.UpdateRobotPose(foot_poses_, base_frame_);
 }
 

@@ -25,6 +25,11 @@ class ConvexMpc {
     void UpdateRobotPose(const std::vector<Eigen::Isometry3d>& foot_poses, const Eigen::Isometry3d& base_pose);
 
   private:
+    // Here, we convert the A and B matricies to the A_qp and B_qp matricies.
+    // Formulation for condenced QP can be found here:
+    // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.385.6703&rep=rep1&type=pdf
+    void ConvertToQpoasesMatricies(const Eigen::Matrix<double, 13, 13>& A, const Eigen::Matrix<double, 13, 13>& B);
+
     // Planning horizon.
     int planning_horizon_ = 0;
 
@@ -33,4 +38,5 @@ class ConvexMpc {
 
     std::vector<FloatingBase::State> plan_trajectory_;
     FloatingBase quadruped_;
+
 };

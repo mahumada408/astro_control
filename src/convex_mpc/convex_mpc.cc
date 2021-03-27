@@ -1,6 +1,8 @@
 #include <astro_control/convex_mpc/convex_mpc.h>
 #include <ros/ros.h>
 
+using fsidx = FloatingBase::State_idx;
+
 ConvexMpc::ConvexMpc(const int planning_horizon, const double timestep) : planning_horizon_(planning_horizon), timestep_(timestep) {
   plan_trajectory_.reserve(planning_horizon_);
 }
@@ -9,7 +11,15 @@ void ConvexMpc::Compute() {
   // First we get the foot positions expressed in the world frame.
   // The foot position vectors are defined as the as the vector from the
   // body base frame origin B0 to the foot frame origin (e.g. FL0 for front left).
-  const std::vector<Eigen::Vector3d> foot_positions = quadruped_.foot_positions();
+
+  //
+  quadruped_.UpdateDynamics();
+  quadruped_.DiscretizeDynamics();
+
+  // Get cost matricies.
+
+  // convert to qpoases matricies
+
 }
 
 void ConvexMpc::GenerateTrajectory(const Eigen::Vector3d desired_velocity, const Eigen::Vector3d desired_angular_velocity) {
@@ -48,4 +58,25 @@ void ConvexMpc::GenerateTrajectory(const Eigen::Vector3d desired_velocity, const
 void ConvexMpc::UpdateRobotPose(const std::vector<Eigen::Isometry3d>& foot_poses, const Eigen::Isometry3d& base_pose) {
   quadruped_.SetFootPositions(foot_poses);
   quadruped_.SetRobotPose(base_pose);
+}
+
+void ConvexMpc::ConvertToQpoasesMatricies(const Eigen::Matrix<double, 13, 13>& A, const Eigen::Matrix<double, 13, 13>& B) {
+  const int plan_horizon = planning_horizon_;
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_qp;
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> B_qp;
+
+  A_qp.resize(fsidx::state_count * planning_horizon_ + 1, fsidx::state_count);
+  B_qp.resize(fsidx::state_count * planning_horizon_ + 1, FloatingBase::ControlsInputs::control_count * planning_horizon_);
+
+  A_qp.setZero();
+  B_qp.setZero();
+
+  // Set A
+  A_qp.block(0, 0, fsidx::state_count, fsidx::state_count) = Eigen::Matrix<double, fsidx::state_count, fsidx::state_count>::Identity();
+
+  for (int i = 1; i < planning_horizon_; ++i) {
+    A_qp.block(i * fsidx::state_count, 0, fsidx::state_count, fsidx::state_count) = quadruped_.A_dt().pow(i);
+  }
+
+
 }

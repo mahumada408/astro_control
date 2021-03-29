@@ -1,0 +1,3 @@
+<launch>
+	<test test-name="Unit-Tests" pkg="astro_control" type="astro_tests" name="astro_tests"/>
+</launch>

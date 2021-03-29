@@ -1,7 +1,11 @@
 #include <astro_control/convex_mpc/convex_mpc.h>
+
 #include <ros/ros.h>
 
+#include <unsupported/Eigen/MatrixFunctions>
+
 using fsidx = FloatingBase::State_idx;
+using fc = FloatingBase::Control;
 
 ConvexMpc::ConvexMpc(const int planning_horizon, const double timestep) : planning_horizon_(planning_horizon), timestep_(timestep) {
   plan_trajectory_.reserve(planning_horizon_);
@@ -15,6 +19,7 @@ void ConvexMpc::Compute() {
   //
   quadruped_.UpdateDynamics();
   quadruped_.DiscretizeDynamics();
+  ConvertToQpoasesMatricies();
 
   // Get cost matricies.
 
@@ -60,13 +65,12 @@ void ConvexMpc::UpdateRobotPose(const std::vector<Eigen::Isometry3d>& foot_poses
   quadruped_.SetRobotPose(base_pose);
 }
 
-void ConvexMpc::ConvertToQpoasesMatricies(const Eigen::Matrix<double, 13, 13>& A, const Eigen::Matrix<double, 13, 13>& B) {
-  const int plan_horizon = planning_horizon_;
+void ConvexMpc::ConvertToQpoasesMatricies() {
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_qp;
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> B_qp;
 
-  A_qp.resize(fsidx::state_count * planning_horizon_ + 1, fsidx::state_count);
-  B_qp.resize(fsidx::state_count * planning_horizon_ + 1, FloatingBase::ControlsInputs::control_count * planning_horizon_);
+  A_qp.resize(fsidx::state_count * (planning_horizon_ + 1), fsidx::state_count);
+  B_qp.resize(fsidx::state_count * (planning_horizon_ + 1), fc::control_count * planning_horizon_);
 
   A_qp.setZero();
   B_qp.setZero();
@@ -74,9 +78,32 @@ void ConvexMpc::ConvertToQpoasesMatricies(const Eigen::Matrix<double, 13, 13>& A
   // Set A
   A_qp.block(0, 0, fsidx::state_count, fsidx::state_count) = Eigen::Matrix<double, fsidx::state_count, fsidx::state_count>::Identity();
 
-  for (int i = 1; i < planning_horizon_; ++i) {
-    A_qp.block(i * fsidx::state_count, 0, fsidx::state_count, fsidx::state_count) = quadruped_.A_dt().pow(i);
+  for (int i = 1; i < planning_horizon_ + 1; ++i) {
+    Eigen::Matrix<double, 13, 13> A_power;
+    A_power = quadruped_.A_dt();
+    for (int pow = 1; pow < i; ++pow) {
+      A_power = A_power * quadruped_.A_dt();
+    }
+    A_qp.block(i * fsidx::state_count, 0, fsidx::state_count, fsidx::state_count) = A_power;
+
   }
 
+  // Set B
+  for (int i = 0; i < planning_horizon_; ++i) {
+    // Go across the columns.
+    for (int j = 1; j < planning_horizon_ + 1; ++j) {
+      // Go across the rows.
+      B_qp.block(j * fsidx::state_count, i * fc::control_count, fsidx::state_count, fc::control_count) = quadruped_.A_dt().pow(j - 1) * quadruped_.B_dt();
+    }
+  }
 
+  std::cout << "---------- A_qp ----------" << std::endl;
+  std::cout << A_qp.rows() << "x" << A_qp.cols() << std::endl;
+  std::cout << A_qp << std::endl;
+  std::cout << "---------- B_qp ----------" << std::endl;
+  std::cout << B_qp.rows() << "x" << B_qp.cols() << std::endl;
+  std::cout << B_qp << std::endl;
+
+  // L is a diagonal matrix of weights for the state deviations. L has dimentions 13k x 13k.
+  Eigen::MatrixX<double, FloatingBase::State_idx::state_count * planning_horizon_, FloatingBase::State_idx::state_count * planning_horizon_> L;
 }

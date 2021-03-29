@@ -3,12 +3,21 @@
 #include <math.h>
 #include <eigen3/unsupported/Eigen/MatrixFunctions>
 
+
+FloatingBase::FloatingBase() {
+  FloatingBase(mass_, i_xx_, i_yy_, i_zz_);
+}
+
 FloatingBase::FloatingBase(double mass, double i_xx, double i_yy, double i_zz)
     : mass_(mass), i_xx_(i_xx), i_yy_(i_yy), i_zz_(i_zz) {
   // Set robot's body inertia.
   Eigen::Matrix<double, 3, 1> Id;
   Id << i_xx_, i_yy_, i_zz_;
+
+  inertia_.setZero();
   inertia_.diagonal() = Id;
+  std::cout << "inertia constructor" << std::endl;
+  std::cout << inertia_ << std::endl;
 
   r_yaw_.setZero();
   A_continuous_.setZero();
@@ -17,17 +26,6 @@ FloatingBase::FloatingBase(double mass, double i_xx, double i_yy, double i_zz)
 }
 
 void FloatingBase::SetFootPositions(const std::vector<Eigen::Isometry3d>& foot_poses) {
-  // foot_fl_ = foot_fl;
-  // foot_fr_ = foot_fr;
-  // foot_rl_ = foot_rl;
-  // foot_rr_ = foot_rr;
-
-  // foot_positions_.clear();
-  // foot_positions_.reserve(Foot::foot_count);
-  // foot_positions_.push_back(foot_fl_);
-  // foot_positions_.push_back(foot_fr_);
-  // foot_positions_.push_back(foot_rl_);
-  // foot_positions_.push_back(foot_rr_);
 
   foot_poses_.clear();
   foot_poses_ = foot_poses;
@@ -45,8 +43,6 @@ void FloatingBase::SetOrientation(const Eigen::Matrix3d robo_rotation) {
   robo_state_[State_idx::roll] = euler_angles.x();
   robo_state_[State_idx::pitch] = euler_angles.y();
   robo_state_[State_idx::yaw] = euler_angles.z();
-
-  std::cout << robo_state_[State_idx::roll] * 180/M_PI << " | " << robo_state_[State_idx::pitch] * 180/M_PI << " | " << robo_state_[State_idx::yaw] * 180/M_PI << std::endl;
 }
 
 void FloatingBase::SetRobotVelocities(geometry_msgs::Twist& robo_twist) {
@@ -69,7 +65,7 @@ void FloatingBase::SetRobotPose(const Eigen::Isometry3d& robo_pose) {
             0, 0, 0;
 }
 
-Eigen::Matrix3d FloatingBase::SkewSymmetricFoot(Eigen::Vector3d foot_pos) {
+Eigen::Matrix3d FloatingBase::SkewSymmetricFoot(const Eigen::Vector3d& foot_pos) {
   // Create a skew symmetric matrix from the foot position.
   // The skew matrix will have the following format:
   // 0, -z, y
@@ -80,23 +76,32 @@ Eigen::Matrix3d FloatingBase::SkewSymmetricFoot(Eigen::Vector3d foot_pos) {
   skew_pos << 0, -foot_pos.z(), foot_pos.y(),
               foot_pos.z(), 0, -foot_pos.x(),
               -foot_pos.y(), foot_pos.x(), 0;
+  std::cout << "skew pos" << std::endl;
+  std::cout << skew_pos << std::endl;
   return skew_pos;
 }
 
-Eigen::Matrix3d FloatingBase::InertiaPos(Eigen::Matrix3d inertia, Eigen::Vector3d foot_pos) {
-  return inertia.inverse() * SkewSymmetricFoot(foot_pos);
+Eigen::Matrix3d FloatingBase::InertiaPos(const Eigen::Vector3d& foot_pos) {
+  std::cout << "inertia" << std::endl;
+  std::cout << inertia_ << std::endl;
+
+  Eigen::Matrix<double, 3, 1> Id;
+  Id << i_xx_, i_yy_, i_zz_;
+  inertia_.diagonal() = Id;
+
+  return inertia_.inverse() * SkewSymmetricFoot(foot_pos);
 }
 
 void FloatingBase::UpdateDynamics() {
   // Get inertia in the global frame.
-  Eigen::Matrix3d inertia_global{r_yaw_ * inertia_ * r_yaw_.transpose()};
+  // Eigen::Matrix3d inertia_global{r_yaw_ * inertia_ * r_yaw_.transpose()};
 
   // Update the state space A matrix.
   // Zero it out first just in case.
   A_continuous_.setZero();
   A_continuous_.block(0, 6, 3, 3) = Eigen::Matrix3d::Identity();
   A_continuous_.block(3, 9, 3, 3) = Eigen::Matrix3d::Identity();
-  A_continuous_(8, 12) = 1.0;
+  A_continuous_(8, 12) = 1.0; // gravity
 
   // Update the state space B matrix.
   // Zero it out first just in case.
@@ -104,18 +109,34 @@ void FloatingBase::UpdateDynamics() {
 
   for (int i = 0; i < Foot::foot_count; ++i) {
     B_continuous_.block(6, i * 3, 3, 3) = Eigen::Matrix3d::Identity() / mass_;
-    B_continuous_.block(9, i * 3, 3, 3) = InertiaPos(inertia_, foot_poses_[i].translation());
+    B_continuous_.block(9, i * 3, 3, 3) = InertiaPos(foot_poses_[i].translation());
   }
+
+  std::cout << "---------- A_continuous ----------" << std::endl;
+  std::cout << A_continuous_ << std::endl;
+  std::cout << "---------- B_continuous ----------" << std::endl;
+  std::cout << B_continuous_ << std::endl;
 }
+
+//    ┌   ┐      ┌      ┐ ┌   ┐
+//    │   │      │      │ │   │
+//  d │ X │  ─── │ A  B │ │ X │
+//  _ │   │  ─── │      │ │   │
+// dt │ U │      │ 0  0 │ │ U │
+//    │   │      │      │ │   │
+//    └   ┘      └      ┘ └   ┘
 
 void FloatingBase::DiscretizeDynamics() {
   // Combine A and B matrix into one super 25x25 matrix.
-  Eigen::Matrix<double, 25, 25> AB_continuous;
-  Eigen::Matrix<double, 25, 25> exponent_matrix;
-  AB_continuous.block(0, 0, 13, 13) = A_continuous_;
-  AB_continuous.block(0, 13, 13, 12) = B_continuous_;
+  const int matrix_size = State_idx::state_count + Control::control_count;
+  Eigen::Matrix<double, matrix_size, matrix_size> AB_continuous;
+  Eigen::Matrix<double, matrix_size, matrix_size> exponent_matrix;
+  AB_continuous.setZero();
+  exponent_matrix.setZero();
+  AB_continuous.block(0, 0, State_idx::state_count, State_idx::state_count) = A_continuous_;
+  AB_continuous.block(0, State_idx::state_count, State_idx::state_count, Control::control_count) = B_continuous_;
   AB_continuous = 0.030 * AB_continuous;  // 30 ms discretization.
   exponent_matrix = AB_continuous.exp();
-  A_discrete_ = exponent_matrix.block(0, 0, 13, 13);
-  B_discrete_ = exponent_matrix.block(0, 13, 13, 12);
+  A_discrete_ = exponent_matrix.block(0, 0, State_idx::state_count, State_idx::state_count);
+  B_discrete_ = exponent_matrix.block(0, State_idx::state_count, State_idx::state_count, Control::control_count);
 }

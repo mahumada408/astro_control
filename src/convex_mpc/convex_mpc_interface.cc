@@ -3,10 +3,7 @@
 #include "astro_control/floating_base/floating_base.h"
 #include <eigen_conversions/eigen_msg.h>
 
-ConvexMpcInterface::ConvexMpcInterface(const int planning_horizon, const double timestep) : controller_(planning_horizon, timestep) {
-  foot_poses_.clear();
-  foot_poses_.reserve(FloatingBase::Foot::foot_count);
-}
+ConvexMpcInterface::ConvexMpcInterface(const int planning_horizon, const double timestep) : controller_(planning_horizon, timestep) {}
 
 void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
   // 0 | ground_plane::link
@@ -28,7 +25,7 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
   // 16 | a1_gazebo::RR_thigh
   // 17 | a1_gazebo::RR_calf
   foot_poses_.clear();
-  foot_poses_.reserve(FloatingBase::Foot::foot_count);
+  foot_poses_.resize(FloatingBase::Foot::foot_count);
   
   // Couldnt find the position of the foot frames, so we're going to have to get the calf frame, then project the
   // foot frame from there. C is the calf frame, F is the foot frame.

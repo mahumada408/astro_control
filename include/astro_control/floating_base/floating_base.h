@@ -90,23 +90,7 @@ class FloatingBase {
     foot_count
   };
 
-  enum ControlsInputs {
-    f_fl_x = 0,
-    f_fl_x = 1,
-    f_fl_x = 2,
-    f_fl_x = 3,
-    f_fl_x = 4,
-    f_fl_x = 5,
-    f_fl_x = 6,
-    f_fl_x = 7,
-    f_fl_x = 8,
-    f_fl_x = 9,
-    f_fl_x = 10,
-    f_fl_x = 11,
-    control_count
-  };
-
-  FloatingBase() {}
+  FloatingBase();
   FloatingBase(double mass, double Ixx, double Iyy, double Izz);
   ~FloatingBase() {}
 
@@ -137,11 +121,11 @@ class FloatingBase {
 
  private:
   // Form skew symmetric matrix for foot position.
-  Eigen::Matrix3d SkewSymmetricFoot(Eigen::Vector3d foot_pos);
+  Eigen::Matrix3d SkewSymmetricFoot(const Eigen::Vector3d& foot_pos);
 
   // Matrix multiplication between inertia tensor and the position vector
   // from the CG to the foot location.
-  Eigen::Matrix3d InertiaPos(Eigen::Matrix3d inertia, Eigen::Vector3d foot_pos);
+  Eigen::Matrix3d InertiaPos(const Eigen::Vector3d& foot_pos);
 
   // Sets the position of the origin of the body frame in the world frame, expressed in the world frame.
   void SetRobotPosition(const Eigen::Vector3d& robo_pos);
@@ -152,12 +136,14 @@ class FloatingBase {
   void SetRobotVelocities(geometry_msgs::Twist& robo_twist);
 
   // Mass of the robot.
-  double mass_;
+  // Default to A1.
+  double mass_ = 12.454;
 
   // Robot inertia tensor in the quadruped body frame.
-  double i_xx_;
-  double i_yy_;
-  double i_zz_;
+  // Default to A1.
+  double i_xx_ = 0.01683993;
+  double i_yy_ = 0.056579028;
+  double i_zz_ = 0.064713601;
   Eigen::Matrix3d inertia_;
 
   // Rotation matrix about the z axis (yaw).

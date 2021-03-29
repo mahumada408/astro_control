@@ -31,3 +31,11 @@ target_link_libraries(test_listen
 # Keyboard teleop
 add_executable(astro_teleop_key src/astro_teleop.cc)
 target_link_libraries(astro_teleop_key ${catkin_LIBRARIES})
+
+# Unit tests
+find_package(rostest REQUIRED)
+
+add_rostest_gtest(astro_tests launch/gtest.test src/test/test_hello.cc)
+target_link_libraries(astro_tests
+                      ${catkin_LIBRARIES}
+                      convex_mpc)

@@ -22,19 +22,26 @@ class ConvexMpc {
     void GenerateTrajectory(const Eigen::Vector3d desired_velocity, const Eigen::Vector3d desired_angular_velocity);
 
     // Update robot pose.
-    void UpdateRobotPose(const std::vector<Eigen::Isometry3d>& foot_poses, const Eigen::Isometry3d& base_pose);
+    void UpdateRobotPose(const std::vector<Eigen::Isometry3d>& foot_poses, const Eigen::Isometry3d& base_pose, const Eigen::Vector3d& linear_velocity, const Eigen::Vector3d& angular_velocity);
 
   private:
     // Here, we convert the A and B matricies to the A_qp and B_qp matricies.
     // Formulation for condenced QP can be found here:
     // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.385.6703&rep=rep1&type=pdf
-    void ConvertToQpoasesMatricies();
+    void CondensedFormulation();
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> StateRef();
 
     // Planning horizon.
     int planning_horizon_ = 0;
 
     // Timestep of the planning ane MPC trajectories.
     double timestep_ = 0;
+
+    // H and g for condensed QP formulation.
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> H_;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> g_;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> C_;
 
     std::vector<FloatingBase::State> plan_trajectory_;
     FloatingBase quadruped_;

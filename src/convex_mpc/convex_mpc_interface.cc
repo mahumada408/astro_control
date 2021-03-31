@@ -39,6 +39,8 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
   for (size_t i = 0; i < msg.name.size(); ++i) {
     if (msg.name[i] == "a1_gazebo::base") {
       tf::poseMsgToEigen(msg.pose[i], base_frame_);
+      tf::vectorMsgToEigen(msg.twist[i].linear, v_WBo_);
+      tf::vectorMsgToEigen(msg.twist[i].angular, w_WB_);
     }
     else if (msg.name[i] == "a1_gazebo::FL_calf") {
       // FL
@@ -74,7 +76,7 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
     }
   }
 
-  controller_.UpdateRobotPose(foot_poses_, base_frame_);
+  controller_.UpdateRobotPose(foot_poses_, base_frame_, v_WBo_, w_WB_);
 }
 
 void ConvexMpcInterface::InputToTrajectory(const geometry_msgs::Twist& msg) {

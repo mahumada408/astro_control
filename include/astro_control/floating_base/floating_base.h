@@ -94,12 +94,10 @@ class FloatingBase {
   FloatingBase(double mass, double Ixx, double Iyy, double Izz);
   ~FloatingBase() {}
 
-  void UpdateState();
-
   void SetFootPositions(const std::vector<Eigen::Isometry3d>& foot_poses);
 
   // Sets the pose of the robots base frame (at the CG) in the world frame.
-  void SetRobotPose(const Eigen::Isometry3d& robo_pose);
+  void SetRobotPose(const Eigen::Isometry3d& robo_pose, const Eigen::Vector3d& linear_velocity, const Eigen::Vector3d& angular_velocity);
 
   // Update the continuous linear dynamics.
   // x_dot = Ax + Bu
@@ -117,7 +115,11 @@ class FloatingBase {
 
   Eigen::Matrix<double, 13, 12> B_dt() { return B_discrete_; }
 
-  const std::vector<Eigen::Vector3d> foot_positions() { return foot_positions_; }
+  std::vector<Eigen::Vector3d> foot_positions() { return foot_positions_; }
+
+  Eigen::Matrix<double, State_idx::state_count, 1> robot_pose() { return robo_state_; }
+
+  double mu() { return mu_; }
 
  private:
   // Form skew symmetric matrix for foot position.
@@ -133,7 +135,7 @@ class FloatingBase {
   // Sets the orientation of the body frame in the world frame, expressed in the world frame.
   void SetOrientation(const Eigen::Matrix3d robo_quat);
 
-  void SetRobotVelocities(geometry_msgs::Twist& robo_twist);
+  void SetRobotVelocities(const Eigen::Vector3d& linear_velocity, const Eigen::Vector3d& angular_velocity);
 
   // Mass of the robot.
   // Default to A1.
@@ -145,6 +147,9 @@ class FloatingBase {
   double i_yy_ = 0.056579028;
   double i_zz_ = 0.064713601;
   Eigen::Matrix3d inertia_;
+
+  // Friction.
+  double mu_ = 0.5;
 
   // Rotation matrix about the z axis (yaw).
   Eigen::Matrix3d r_yaw_;
@@ -163,5 +168,5 @@ class FloatingBase {
   Eigen::Matrix<double, 13, 12> B_discrete_;
 
   // State of the robot. Note that all state variables must be expressed in the world frame.
-  Eigen::Matrix<double, 13, 1> robo_state_;
+  Eigen::Matrix<double, State_idx::state_count, 1> robo_state_;
 };

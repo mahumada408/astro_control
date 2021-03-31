@@ -67,7 +67,13 @@ TEST(TestSuite, testCase1)
                      0, 1, 0,
                      0, 0, 1;
 
-    controller.UpdateRobotPose(foot_poses, base);
+    Eigen::Vector3d linear_vel;
+    Eigen::Vector3d angular_vel;
+
+    linear_vel.setZero();
+    angular_vel.setZero();
+
+    controller.UpdateRobotPose(foot_poses, base, linear_vel, angular_vel);
     controller.Compute();
 
 

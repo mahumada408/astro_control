@@ -23,6 +23,7 @@ FloatingBase::FloatingBase(double mass, double i_xx, double i_yy, double i_zz)
   A_continuous_.setZero();
   B_continuous_.setZero();
   robo_state_.setZero();
+  robo_state_[State_idx::g] = -9.81;
 }
 
 void FloatingBase::SetFootPositions(const std::vector<Eigen::Isometry3d>& foot_poses) {
@@ -45,19 +46,19 @@ void FloatingBase::SetOrientation(const Eigen::Matrix3d robo_rotation) {
   robo_state_[State_idx::yaw] = euler_angles.z();
 }
 
-void FloatingBase::SetRobotVelocities(geometry_msgs::Twist& robo_twist) {
-  robo_state_[State_idx::x_dot] = robo_twist.linear.x;
-  robo_state_[State_idx::y_dot] = robo_twist.linear.y;
-  robo_state_[State_idx::z_dot] = robo_twist.linear.z;
-  robo_state_[State_idx::roll_dot] = robo_twist.angular.x;
-  robo_state_[State_idx::pitch_dot] = robo_twist.angular.y;
-  robo_state_[State_idx::yaw_dot] = robo_twist.angular.z;
+void FloatingBase::SetRobotVelocities(const Eigen::Vector3d& linear_velocity, const Eigen::Vector3d& angular_velocity) {
+  robo_state_[State_idx::x_dot] = linear_velocity.x();
+  robo_state_[State_idx::y_dot] = linear_velocity.y();
+  robo_state_[State_idx::z_dot] = linear_velocity.z();
+  robo_state_[State_idx::roll_dot] = angular_velocity.x();
+  robo_state_[State_idx::pitch_dot] = angular_velocity.y();
+  robo_state_[State_idx::yaw_dot] = angular_velocity.z();
 }
 
-void FloatingBase::SetRobotPose(const Eigen::Isometry3d& robo_pose) {
+void FloatingBase::SetRobotPose(const Eigen::Isometry3d& robo_pose, const Eigen::Vector3d& linear_velocity, const Eigen::Vector3d& angular_velocity) {
   SetRobotPosition(robo_pose.translation());
   SetOrientation(robo_pose.rotation());
-  // SetRobotVelocities(robo_twist);
+  SetRobotVelocities(linear_velocity, angular_velocity);
 
   // Update rotation matrix with yaw angle.
   r_yaw_ << cos(robo_state_[State_idx::yaw]), -sin(robo_state_[State_idx::yaw]), 0,

@@ -28,4 +28,5 @@ class ConvexMpcInterface {
     Eigen::Vector3d v_WBo_; // Bo's velocity in world frame.
     Eigen::Vector3d w_WB_; // B frame's angular velocity in W.
     std::vector<Eigen::Isometry3d> foot_poses_;
+    std::vector<int> foot_cs_; // Foot contact states.
 };

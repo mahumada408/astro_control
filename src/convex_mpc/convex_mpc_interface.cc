@@ -65,6 +65,7 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
       foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
       foot_eig.rotate(calf.rotation());
       foot_poses_[FloatingBase::Foot::rl] = foot_eig;
+      std::cout << "rl " << foot_eig.translation() << std::endl;
     }
     else if (msg.name[i] == "a1_gazebo::RR_calf") {
       // RR
@@ -73,6 +74,7 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
       foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
       foot_eig.rotate(calf.rotation());
       foot_poses_[FloatingBase::Foot::rr] = foot_eig;
+      std::cout << "rr " << foot_eig.translation() << std::endl;
     }
   }
 

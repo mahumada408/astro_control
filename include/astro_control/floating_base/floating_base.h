@@ -121,6 +121,8 @@ class FloatingBase {
 
   double mu() { return mu_; }
 
+  double mass() { return mass_; }
+
  private:
   // Form skew symmetric matrix for foot position.
   Eigen::Matrix3d SkewSymmetricFoot(const Eigen::Vector3d& foot_pos);

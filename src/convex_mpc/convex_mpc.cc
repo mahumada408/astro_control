@@ -11,7 +11,9 @@ ConvexMpc::ConvexMpc(const int planning_horizon, const double timestep) : planni
   plan_trajectory_.reserve(planning_horizon_);
   H_.resize(3 * FloatingBase::Foot::foot_count * planning_horizon_, 3 * FloatingBase::Foot::foot_count * planning_horizon_);
   g_.resize(3 * FloatingBase::Foot::foot_count * planning_horizon_, 1);
-  C_.resize(5 * FloatingBase::Foot::foot_count * planning_horizon_, 3 * FloatingBase::Foot::foot_count * planning_horizon_);
+  C_.resize(num_constraints_ * FloatingBase::Foot::foot_count * planning_horizon_, 3 * FloatingBase::Foot::foot_count * planning_horizon_);
+  constraint_lb_.resize(num_constraints_ * FloatingBase::Foot::foot_count * planning_horizon_, 1);
+  constraint_ub_.resize(num_constraints_ * FloatingBase::Foot::foot_count * planning_horizon_, 1);
 
   H_.setZero();
   g_.setZero();
@@ -165,7 +167,7 @@ void ConvexMpc::CondensedFormulation() {
 
   // Constraint matrix;
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> constraints;
-  constraints.resize(5, 3);
+  constraints.resize(num_constraints_, 3);
   constraints << -1, 0, quadruped_.mu(),
                   1, 0, quadruped_.mu(),
                   0, -1, quadruped_.mu(),
@@ -173,9 +175,47 @@ void ConvexMpc::CondensedFormulation() {
                   0, 0, 1;
   
   for (int i = 0; i < planning_horizon_ * FloatingBase::Foot::foot_count; ++i) {
-    C_.block(i * 5, i * 3, 5, 3) = constraints;
+    C_.block(i * num_constraints_, i * 3, num_constraints_, 3) = constraints;
   }
 
   std::cout << "---------- C ----------" << std::endl;
   std::cout << C_ << std::endl;
+
+  std::vector<int> foot_cs = ContactChecker(quadruped_.foot_positions());
+
+  const double fz_max = quadruped_.mass() * 9.81 / 4;
+
+  for (int i = 0; i < planning_horizon_; ++i) {
+    for (int j = 0; i < FloatingBase::Foot::foot_count; ++j) {
+      const int row = (i * FloatingBase::Foot::foot_count + j) * num_constraints_;
+      constraint_lb_[row] = 0;
+      constraint_lb_[row + 1] = 0;
+      constraint_lb_[row + 2] = 0;
+      constraint_lb_[row + 3] = 0;
+      constraint_lb_[row + 4] =  fz_max / 10 * foot_cs[j];
+
+      const double friction_ub = (quadruped_.mu() + 1) * fz_max * foot_cs[j];
+      constraint_ub_[row] = friction_ub;
+      constraint_ub_[row + 1] = friction_ub;
+      constraint_ub_[row + 2] = friction_ub;
+      constraint_ub_[row + 3] = friction_ub;
+      constraint_ub_[row + 4] = fz_max * foot_cs[j];
+    }
+  }
+
+}
+
+std::vector<int> ConvexMpc::ContactChecker(const std::vector<Eigen::Vector3d>& foot_poses) {
+  std::vector<int> foot_cs;
+  foot_cs.reserve(FloatingBase::Foot::foot_count);
+  for (const auto& foot : foot_poses) {
+    int cs = 0;
+    if (foot.z() < 0.025) {
+      // we have contact.
+      cs = 1;
+    }
+    foot_cs.push_back(cs);
+  }
+
+  return foot_cs;
 }

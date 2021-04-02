@@ -30,6 +30,8 @@ class ConvexMpc {
     // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.385.6703&rep=rep1&type=pdf
     void CondensedFormulation();
 
+    std::vector<int> ContactChecker(const std::vector<Eigen::Vector3d>& foot_poses);
+
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> StateRef();
 
     // Planning horizon.
@@ -38,10 +40,15 @@ class ConvexMpc {
     // Timestep of the planning ane MPC trajectories.
     double timestep_ = 0;
 
-    // H and g for condensed QP formulation.
+    // Number of constraints.
+    int num_constraints_ = 5;
+
+    // Condensed QP formulation.
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> H_;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> g_;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> C_;
+    Eigen::VectorXd constraint_ub_;
+    Eigen::VectorXd constraint_lb_;
 
     std::vector<FloatingBase::State> plan_trajectory_;
     FloatingBase quadruped_;

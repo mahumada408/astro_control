@@ -13,7 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf tf_conversions
   eigen_conversions
+  sophus
 )
+# find_package(sophus REQUIRED)
 
 include_directories(include
                     ${catkin_INCLUDE_DIRS})

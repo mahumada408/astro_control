@@ -3,27 +3,11 @@
 #include "astro_control/floating_base/floating_base.h"
 #include <eigen_conversions/eigen_msg.h>
 
-ConvexMpcInterface::ConvexMpcInterface(const int planning_horizon, const double timestep) : controller_(planning_horizon, timestep) {}
+ConvexMpcInterface::ConvexMpcInterface(const int planning_horizon, const double timestep) : controller_(planning_horizon, timestep) {
+  std::cout << "done initializing the interface" << std::endl;
+}
 
 void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
-  // 0 | ground_plane::link
-  // 1 | static_environment::floor
-  // 2 | static_environment::floor2
-  // 3 | static_environment::floor3
-  // 4 | stairs::Stairs_1
-  // 5 | a1_gazebo::base
-  // 6 | a1_gazebo::FL_hip
-  // 7 | a1_gazebo::FL_thigh
-  // 8 | a1_gazebo::FL_calf
-  // 9 | a1_gazebo::FR_hip
-  // 10 | a1_gazebo::FR_thigh
-  // 11 | a1_gazebo::FR_calf
-  // 12 | a1_gazebo::RL_hip
-  // 13 | a1_gazebo::RL_thigh
-  // 14 | a1_gazebo::RL_calf
-  // 15 | a1_gazebo::RR_hip
-  // 16 | a1_gazebo::RR_thigh
-  // 17 | a1_gazebo::RR_calf
   foot_poses_.clear();
   foot_poses_.resize(FloatingBase::Foot::foot_count);
   
@@ -41,42 +25,58 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
       tf::poseMsgToEigen(msg.pose[i], base_frame_);
       tf::vectorMsgToEigen(msg.twist[i].linear, v_WBo_);
       tf::vectorMsgToEigen(msg.twist[i].angular, w_WB_);
+      std::cout << "base" << std::endl;
+      std::cout << base_frame_.translation() << std::endl;
+      std::cout << base_frame_.rotation() << std::endl;
     }
     else if (msg.name[i] == "a1_gazebo::FL_calf") {
       // FL
       foot_eig.translation().setZero();
       tf::poseMsgToEigen(msg.pose[i], calf);
       foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
-      foot_eig.rotate(calf.rotation());
+      foot_eig.linear() = calf.rotation();
       foot_poses_[FloatingBase::Foot::fl] = foot_eig;
+      std::cout << "fl" << std::endl;
+      std::cout << foot_eig.translation() << std::endl;
+      std::cout << foot_eig.rotation() << std::endl;
     }
     else if (msg.name[i] == "a1_gazebo::FR_calf") {
       // FR
       foot_eig.translation().setZero();
       tf::poseMsgToEigen(msg.pose[i], calf);
       foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
-      foot_eig.rotate(calf.rotation());
+      foot_eig.linear() = calf.rotation();
       foot_poses_[FloatingBase::Foot::fr] = foot_eig;
+      std::cout << "fr" << std::endl;
+      std::cout << foot_eig.translation() << std::endl;
+      std::cout << foot_eig.rotation() << std::endl;
     }
     else if (msg.name[i] == "a1_gazebo::RL_calf") {
       // RL
       foot_eig.translation().setZero();
       tf::poseMsgToEigen(msg.pose[i], calf);
       foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
-      foot_eig.rotate(calf.rotation());
+      foot_eig.linear() = calf.rotation();
       foot_poses_[FloatingBase::Foot::rl] = foot_eig;
-      std::cout << "rl " << foot_eig.translation() << std::endl;
+      std::cout << "rl" << std::endl;
+      std::cout << foot_eig.translation() << std::endl;
+      std::cout << foot_eig.rotation() << std::endl;
     }
     else if (msg.name[i] == "a1_gazebo::RR_calf") {
       // RR
       foot_eig.translation().setZero();
       tf::poseMsgToEigen(msg.pose[i], calf);
       foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
-      foot_eig.rotate(calf.rotation());
+      foot_eig.linear() = calf.rotation();
       foot_poses_[FloatingBase::Foot::rr] = foot_eig;
-      std::cout << "rr " << foot_eig.translation() << std::endl;
+      std::cout << "rr" << std::endl;
+      std::cout << foot_eig.translation() << std::endl;
+      std::cout << foot_eig.rotation() << std::endl;
     }
   }
+
+  std::cout << "lin vel: " << v_WBo_ << std::endl;
+  std::cout << "ang vel: " << w_WB_ << std::endl;
 
   controller_.UpdateRobotPose(foot_poses_, base_frame_, v_WBo_, w_WB_);
 }

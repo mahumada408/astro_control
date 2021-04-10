@@ -3,12 +3,17 @@
 #include <ros/ros.h>
 
 #include <unsupported/Eigen/MatrixFunctions>
+#include "astro_control/qpOASES/include/qpOASES/QProblem.hpp"
+
 
 using fsidx = FloatingBase::State_idx;
 using fc = FloatingBase::Control;
 
 ConvexMpc::ConvexMpc(const int planning_horizon, const double timestep) : planning_horizon_(planning_horizon), timestep_(timestep) {
-  plan_trajectory_.reserve(planning_horizon_);
+  plan_trajectory_.resize(planning_horizon_);
+  FloatingBase quad;
+  quadruped_ = quad;
+
   H_.resize(3 * FloatingBase::Foot::foot_count * planning_horizon_, 3 * FloatingBase::Foot::foot_count * planning_horizon_);
   g_.resize(3 * FloatingBase::Foot::foot_count * planning_horizon_, 1);
   C_.resize(num_constraints_ * FloatingBase::Foot::foot_count * planning_horizon_, 3 * FloatingBase::Foot::foot_count * planning_horizon_);
@@ -18,6 +23,7 @@ ConvexMpc::ConvexMpc(const int planning_horizon, const double timestep) : planni
   H_.setZero();
   g_.setZero();
   C_.setZero();
+  std::cout << "done initializing the controller" << std::endl;
 }
 
 void ConvexMpc::Compute() {
@@ -25,15 +31,81 @@ void ConvexMpc::Compute() {
   // The foot position vectors are defined as the as the vector from the
   // body base frame origin B0 to the foot frame origin (e.g. FL0 for front left).
 
-  //
+  // Wait for the robot pose to be updated.
+  if (quadruped_.foot_poses().size() == 0) { 
+    std::cout << "Pose not updated. Exiting control computation." << std::endl;
+    return;
+  } else {
+    std::cout << "Pose set! Good to go." << std::endl;
+  }
   quadruped_.UpdateDynamics();
   quadruped_.DiscretizeDynamics();
+  ZeroTrajectory();
+  std::cout << "---------- ref trajectory ----------" << std::endl;
+  for (const auto& state : plan_trajectory_) {
+    std::cout << "state" << std::endl;
+    std::cout << "state x:" << state.x << std::endl;
+    std::cout << "state y:" << state.y << std::endl;
+    std::cout << "state z:" << state.z << std::endl;
+    std::cout << "state x_dot:" << state.x_dot << std::endl;
+    std::cout << "state y_dot:" << state.y_dot << std::endl;
+    std::cout << "state z_dot:" << state.z_dot << std::endl;
+    std::cout << "state roll:" << state.roll << std::endl;
+    std::cout << "state pitch:" << state.pitch << std::endl;
+    std::cout << "state yaw:" << state.yaw << std::endl;
+    std::cout << "state roll_dot:" << state.roll_dot << std::endl;
+    std::cout << "state pitch_dot:" << state.pitch_dot << std::endl;
+    std::cout << "state yaw_dot:" << state.yaw_dot << std::endl;
+    std::cout << "state g:" << state.g << std::endl;
+  }
   CondensedFormulation();
 
-  // Get cost matricies.
-
   // convert to qpoases matricies
+  qpOASES::real_t H_qpoases[H_.rows() * H_.cols()];
+  qpOASES::real_t g_qpoases[g_.rows() * g_.cols()];
+  qpOASES::real_t C_qpoases[C_.rows() * C_.cols()];
+  qpOASES::real_t constraint_ub_qpoases[constraint_ub_.rows() * constraint_ub_.cols()];
+  qpOASES::real_t constraint_lb_qpoases[constraint_lb_.rows() * constraint_lb_.cols()];
+  qpOASES::real_t qp_solution[3 * FloatingBase::Foot::foot_count * planning_horizon_];
+  
+  MatrixToReal(H_qpoases, H_);
+  MatrixToReal(g_qpoases, g_);
+  MatrixToReal(C_qpoases, C_);
+  MatrixToReal(constraint_ub_qpoases, constraint_ub_);
+  MatrixToReal(constraint_lb_qpoases, constraint_lb_);
 
+  const std::vector<int> foot_cs = ContactChecker(quadruped_.foot_poses());
+  const int num_legs_in_contact = std::count(foot_cs.begin(), foot_cs.end(), 1);
+  const qpOASES::int_t qp_dim = num_legs_in_contact * 3 * planning_horizon_;
+  const qpOASES::int_t constraint_dim = num_legs_in_contact * num_constraints_ * planning_horizon_;
+  qpOASES::QProblem qp_problem(qp_dim, constraint_dim, qpOASES::HST_UNKNOWN, qpOASES::BT_TRUE);
+  
+  qpOASES::Options options;
+  options.setToMPC();
+  options.printLevel = qpOASES::PL_HIGH;
+  qp_problem.setOptions(options);
+  qpOASES::int_t nWSR = 100;
+  qp_problem.init(H_qpoases, g_qpoases, C_qpoases, NULL, NULL, constraint_lb_qpoases, constraint_ub_qpoases, nWSR);
+  int qp_status = qp_problem.getPrimalSolution(qp_solution);
+  if (qp_status == qpOASES::SUCCESSFUL_RETURN) {
+    std::cout << "succes!!" << std::endl;
+    for (int i = 0; i < planning_horizon_; ++i) {
+      std::cout << "FL fx: " << qp_solution[i + 0] << std::endl;
+      std::cout << "FL fy: " << qp_solution[i + 1] << std::endl;
+      std::cout << "FL fz: " << qp_solution[i + 2] << std::endl;
+      std::cout << "FR fx: " << qp_solution[i + 3] << std::endl;
+      std::cout << "FR fy: " << qp_solution[i + 4] << std::endl;
+      std::cout << "FR fz: " << qp_solution[i + 5] << std::endl;
+      std::cout << "RL fx: " << qp_solution[i + 6] << std::endl;
+      std::cout << "RL fy: " << qp_solution[i + 7] << std::endl;
+      std::cout << "RL fz: " << qp_solution[i + 8] << std::endl;
+      std::cout << "RR fx: " << qp_solution[i + 9] << std::endl;
+      std::cout << "RR fy: " << qp_solution[i + 10] << std::endl;
+      std::cout << "RR fz: " << qp_solution[i + 11] << std::endl;
+    }
+  } else {
+    std::cout << "QP solve unsuccesful..." << std::endl;
+  }
 }
 
 void ConvexMpc::GenerateTrajectory(const Eigen::Vector3d desired_velocity, const Eigen::Vector3d desired_angular_velocity) {
@@ -48,7 +120,8 @@ void ConvexMpc::GenerateTrajectory(const Eigen::Vector3d desired_velocity, const
     // Fill up a state.
     desired_state.x = timestep_ * (i + 1) * desired_velocity.x();
     desired_state.y = timestep_ * (i + 1) * desired_velocity.y();
-    desired_state.z = timestep_ * (i + 1) * desired_velocity.z();
+    // desired_state.z = timestep_ * (i + 1) * desired_velocity.z();
+    desired_state.z = 0.333697;
     desired_state.x_dot = desired_velocity.x();
     desired_state.y_dot = desired_velocity.y();
     desired_state.z_dot = desired_velocity.z(); // Should be zero to stabilize the height.
@@ -181,12 +254,17 @@ void ConvexMpc::CondensedFormulation() {
   std::cout << "---------- C ----------" << std::endl;
   std::cout << C_ << std::endl;
 
-  std::vector<int> foot_cs = ContactChecker(quadruped_.foot_positions());
+  std::vector<int> foot_cs = ContactChecker(quadruped_.foot_poses());
+  std::cout << "foot size: " << foot_cs.size() << std::endl;
+  for (const auto& cs : foot_cs) {
+    std::cout << "foot cs: " << cs << std::endl;
+  }
 
   const double fz_max = quadruped_.mass() * 9.81 / 4;
+  std::cout << "fz max: " << fz_max << std::endl;
 
   for (int i = 0; i < planning_horizon_; ++i) {
-    for (int j = 0; i < FloatingBase::Foot::foot_count; ++j) {
+    for (int j = 0; j < FloatingBase::Foot::foot_count; ++j) {
       const int row = (i * FloatingBase::Foot::foot_count + j) * num_constraints_;
       constraint_lb_[row] = 0;
       constraint_lb_[row + 1] = 0;
@@ -203,14 +281,18 @@ void ConvexMpc::CondensedFormulation() {
     }
   }
 
+  std::cout << "---------- C_ub ----------" << std::endl;
+  std::cout << constraint_ub_ << std::endl;
+  std::cout << "---------- C_lb ----------" << std::endl;
+  std::cout << constraint_lb_ << std::endl;
 }
 
-std::vector<int> ConvexMpc::ContactChecker(const std::vector<Eigen::Vector3d>& foot_poses) {
+std::vector<int> ConvexMpc::ContactChecker(const std::vector<Eigen::Isometry3d>& foot_poses) {
   std::vector<int> foot_cs;
   foot_cs.reserve(FloatingBase::Foot::foot_count);
   for (const auto& foot : foot_poses) {
     int cs = 0;
-    if (foot.z() < 0.025) {
+    if (foot.translation().z() < 0.25) {
       // we have contact.
       cs = 1;
     }
@@ -218,4 +300,44 @@ std::vector<int> ConvexMpc::ContactChecker(const std::vector<Eigen::Vector3d>& f
   }
 
   return foot_cs;
+}
+
+void ConvexMpc::MatrixToReal(qpOASES::real_t* dst, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> src) {
+  int a = 0;
+  for(int r = 0; r < src.rows(); r++) {
+    for(int c = 0; c < src.cols(); c++) {
+      dst[a] = src(r,c);
+      a++;
+    }
+  }
+}
+
+void ConvexMpc::ZeroTrajectory() {
+  std::cout << "Zero Traj" << std::endl;
+  FloatingBase::State desired_state;
+  plan_trajectory_.clear();
+  plan_trajectory_.reserve(planning_horizon_);
+  for (int i = 0; i < planning_horizon_; ++i) {
+    // Project the velocity to get desired position.
+    // Fill up a state.
+    desired_state.x = 0;
+    desired_state.y = 0;
+    desired_state.z = 0.333697;
+    desired_state.x_dot = 0;
+    desired_state.y_dot = 0;
+    desired_state.z_dot = 0; // Should be zero to stabilize the height.
+
+    // Desired roll pitch yaw should be 0 for stabilization.
+    desired_state.roll = 0.0;
+    desired_state.pitch = 0.0;
+    desired_state.yaw = 0.0;
+    // Desired roll and pitch rate should be zero for stabilization.
+    desired_state.roll_dot = 0;
+    desired_state.pitch_dot = 0;
+    desired_state.yaw_dot = 0;
+
+    desired_state.g = -9.81; // m/s^2
+
+    plan_trajectory_.push_back(desired_state);
+  }
 }

@@ -115,7 +115,7 @@ class FloatingBase {
 
   Eigen::Matrix<double, 13, 12> B_dt() { return B_discrete_; }
 
-  std::vector<Eigen::Vector3d> foot_positions() { return foot_positions_; }
+  std::vector<Eigen::Isometry3d> foot_poses() { return foot_poses_; }
 
   Eigen::Matrix<double, State_idx::state_count, 1> robot_pose() { return robo_state_; }
 
@@ -161,7 +161,6 @@ class FloatingBase {
   Eigen::Vector3d foot_fr_;
   Eigen::Vector3d foot_rl_;
   Eigen::Vector3d foot_rr_;
-  std::vector<Eigen::Vector3d> foot_positions_;
   std::vector<Eigen::Isometry3d> foot_poses_;
 
   Eigen::Matrix<double, 13, 13> A_continuous_;

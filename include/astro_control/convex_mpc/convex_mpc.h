@@ -6,6 +6,7 @@
 
 #include <eigen3/Eigen/Dense>
 #include "astro_control/floating_base/floating_base.h"
+#include "astro_control/qpOASES/include/qpOASES.hpp"
 
 
 class ConvexMpc {
@@ -30,9 +31,13 @@ class ConvexMpc {
     // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.385.6703&rep=rep1&type=pdf
     void CondensedFormulation();
 
-    std::vector<int> ContactChecker(const std::vector<Eigen::Vector3d>& foot_poses);
+    std::vector<int> ContactChecker(const std::vector<Eigen::Isometry3d>& foot_poses);
 
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> StateRef();
+
+    void MatrixToReal(qpOASES::real_t* dst, Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> src);
+
+    void ZeroTrajectory();
 
     // Planning horizon.
     int planning_horizon_ = 0;

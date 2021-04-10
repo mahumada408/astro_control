@@ -22,7 +22,7 @@ int main(int argc, char **argv)
   ros::Rate loop_rate(100);
  
 
-  ConvexMpcInterface mpc_interface(10, 0.03);
+  ConvexMpcInterface mpc_interface(2, 0.03);
 
   // Subscribe to gazebo poses.
   ros::Subscriber sub = n.subscribe("gazebo/link_states", 1000, &ConvexMpcInterface::GazeboPoses, &mpc_interface);
@@ -31,7 +31,7 @@ int main(int argc, char **argv)
   ros::Subscriber sub2 = n.subscribe("astro_key/cmd_vel", 1000, &ConvexMpcInterface::InputToTrajectory, &mpc_interface);
 
   // Controller runs at 100 Hz.
-  // ros::Timer timer = n.createTimer(ros::Duration(0.01), &ConvexMpcInterface::Compute, &mpc_interface);
+  ros::Timer timer = n.createTimer(ros::Duration(0.01), &ConvexMpcInterface::Compute, &mpc_interface);
 
   ros::spin();
 

@@ -30,6 +30,11 @@ void FloatingBase::SetFootPositions(const std::vector<Eigen::Isometry3d>& foot_p
 
   foot_poses_.clear();
   foot_poses_ = foot_poses;
+  std::cout << "---------- quad foot positions -------------" << std::endl;
+  std::cout.precision(10);
+  for (auto& foot : foot_poses_) {
+    std::cout << foot.translation().x() << " | " << foot.translation().y() << " | " << foot.translation().z() << std::endl;
+  }
 }
 
 void FloatingBase::SetRobotPosition(const Eigen::Vector3d& robo_pos) {
@@ -64,6 +69,17 @@ void FloatingBase::SetRobotPose(const Eigen::Isometry3d& robo_pose, const Eigen:
   r_yaw_ << cos(robo_state_[State_idx::yaw]), -sin(robo_state_[State_idx::yaw]), 0,
             -sin(robo_state_[State_idx::yaw]), cos(robo_state_[State_idx::yaw]), 0,
             0, 0, 0;
+
+  std::cout.precision(10);
+  std::cout << "--------- base position -----------" << std::endl;
+  std::cout <<  robo_state_[State_idx::x] << " | " << robo_state_[State_idx::y] << " | " << robo_state_[State_idx::z] << std::endl;
+  std::cout << "--------- base orientation -----------" << std::endl;
+  std::cout <<  robo_state_[State_idx::roll] << " | " << robo_state_[State_idx::pitch] << " | " << robo_state_[State_idx::yaw] << std::endl;
+  std::cout << "--------- base velocities -----------" << std::endl;
+  std::cout <<  robo_state_[State_idx::x_dot] << " | " << robo_state_[State_idx::y_dot] << " | " << robo_state_[State_idx::z_dot] << std::endl;
+  std::cout <<  robo_state_[State_idx::roll_dot] << " | " << robo_state_[State_idx::pitch_dot] << " | " << robo_state_[State_idx::yaw_dot] << std::endl;
+  std::cout << "--------- r_yaw -----------" << std::endl;
+  std::cout << r_yaw_ << std::endl;
 }
 
 Eigen::Matrix3d FloatingBase::SkewSymmetricFoot(const Eigen::Vector3d& foot_pos) {

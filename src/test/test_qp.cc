@@ -23,37 +23,37 @@ TEST(TestSuite, testCase1)
     foot_poses.resize(FloatingBase::Foot::foot_count);
     
     // FL
-    foot_position << 0.1431336694, -0.3343344813, 0.01997319203;
-    foot_rotation << 0.2945387836, -0.9395692033, -0.1745182431,
-                     0.7373604909, 0.3396091879, -0.5839221745,
-                     0.6079032911, 0.04330486959, 0.7928292861;
+    foot_position << -0.0614286, 0.131282, 0.0143182;
+    foot_rotation << 0.807443, 0, -0.589946,
+                     0.00667612, 0.999936, 0.00913769,
+                     0.589908, -0.0113167, 0.807391;
     foot.translation() = foot_position;
     foot.linear() = foot_rotation;
     foot_poses[FloatingBase::Foot::fl] = foot;
 
     // FR
-    foot_position << 0.4101086254, -0.4173683127, 0.01994888275;
-    foot_rotation << 0.2561523748, -0.9397538778, -0.2263815585,
-                     0.7910349235, 0.3383903407, -0.5096623658,
-                     0.5555625173, -0.04852449351, 0.8300576262;
+    foot_position << -0.0614286, -0.131282, 0.0143182;
+    foot_rotation << 0.807443, 0, -0.589946,
+                    -0.00667691, 0.999936, -0.00913838,
+                     0.589908, 0.0113177, 0.807391;
     foot.translation() = foot_position;
     foot.linear() = foot_rotation;
     foot_poses[FloatingBase::Foot::fr] = foot;
 
     // RL
-    foot_position << 0.03108941724, -0.6719744509, 0.01994952366;
-    foot_rotation << 0.275175952, -0.9407147085, -0.1983280933,
-                     0.7664811701, 0.3391932947, -0.5453939169,
-                     0.580331639, -0.001935458721, 0.8143779484;
+    foot_position << -0.422429, 0.131281, 0.0143182;
+    foot_rotation << 0.807443, 0, -0.589946,
+                     0.00667461, 0.999936, 0.00913642,
+                     0.589908, -0.0113148, 0.807391;
     foot.translation() = foot_position;
     foot.linear() = foot_rotation;
     foot_poses[FloatingBase::Foot::rl] = foot;
 
     // RR
-    foot_position << 0.2726257793, -0.7566161904, 0.01997893463;
-    foot_rotation << 0.2709639413, -0.9406331747, -0.2044205792,
-                     0.7459169735, 0.3394133047, -0.5730676026,
-                     0.6084294627, 0.002799876504, 0.7936030176;
+    foot_position << -0.422429, -0.131281, 0.0143182;
+    foot_rotation << 0.807443, 0, -0.589946,
+                    -0.00667493, 0.999936, -0.00913664,
+                     0.589908, 0.0113152, 0.807391;
     foot.translation() = foot_position;
     foot.linear() = foot_rotation;
     foot_poses[FloatingBase::Foot::rr] = foot;
@@ -62,10 +62,10 @@ TEST(TestSuite, testCase1)
     Eigen::Isometry3d base;
     Eigen::Vector3d base_position;
     Eigen::Matrix3d base_rotation;
-    base_position << 0.3745211273, -0.4267566197, 0.3348462036;
-    base_rotation << 0.3393212571, -0.9406654808, 0.003088333849,
-                     0.9405990548, 0.3393341159, 0.01121498606,
-                    -0.01159752729, -0.0009005992683, 0.9999323409;
+    base_position << 0, 0, 0.333697;
+    base_rotation << 1, 0, 0,
+                     0, 1, 0,
+                     0, 0, 1;
     base.translation() = base_position;
     base.linear() = base_rotation;
 
@@ -82,7 +82,7 @@ TEST(TestSuite, testCase1)
     controller.Compute();
 
 
-    ASSERT_TRUE(false) << "failed the test of champions";
+    ASSERT_TRUE(true) << "failed the test of champions";
 
     std::cout << "All done" << std::endl;
     

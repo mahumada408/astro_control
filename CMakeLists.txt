@@ -23,6 +23,7 @@ include_directories(include
 # Adds the individual libraries.
 add_subdirectory(src/convex_mpc)
 add_subdirectory(src/floating_base)
+add_subdirectory(src/gait_generator)
 
 add_executable(test_listen src/test_listen.cpp)
 target_link_libraries(test_listen 
@@ -37,7 +38,17 @@ target_link_libraries(astro_teleop_key ${catkin_LIBRARIES})
 # Unit tests
 find_package(rostest REQUIRED)
 
-add_rostest_gtest(astro_tests launch/gtest.test src/test/test_hello.cc)
+add_rostest_gtest(astro_tests launch/gtest.test src/test/test_qp.cc)
 target_link_libraries(astro_tests
                       ${catkin_LIBRARIES}
                       convex_mpc)
+
+add_rostest_gtest(astro_tests launch/gtest.test src/test/test_qp.cc)
+target_link_libraries(astro_tests
+                      ${catkin_LIBRARIES}
+                      convex_mpc)
+
+add_rostest_gtest(gait_test launch/gtest_gait.test src/test/test_gait.cc)
+target_link_libraries(gait_test
+                      ${catkin_LIBRARIES}
+                      gait_generator)

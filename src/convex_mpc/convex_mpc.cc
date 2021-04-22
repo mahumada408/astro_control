@@ -74,6 +74,15 @@ void ConvexMpc::Compute() {
   MatrixToReal(constraint_ub_qpoases, constraint_ub_);
   MatrixToReal(constraint_lb_qpoases, constraint_lb_);
 
+  std::cout << "------------ constraint_ub_qpoases -----------" << std::endl;
+  for (size_t i = 0; i < constraint_ub_.rows() * constraint_ub_.cols(); ++i) {
+    std::cout << constraint_ub_qpoases[i] << std::endl;
+  }
+  std::cout << "------------ constraint_lb_qpoases -----------" << std::endl;
+  for (size_t i = 0; i < constraint_ub_.rows() * constraint_ub_.cols(); ++i) {
+    std::cout << constraint_lb_qpoases[i] << std::endl;
+  }
+
   const std::vector<int> foot_cs = ContactChecker(quadruped_.foot_poses());
   const int num_legs_in_contact = std::count(foot_cs.begin(), foot_cs.end(), 1);
   const qpOASES::int_t qp_dim = num_legs_in_contact * 3 * planning_horizon_;
@@ -85,11 +94,12 @@ void ConvexMpc::Compute() {
   options.printLevel = qpOASES::PL_HIGH;
   qp_problem.setOptions(options);
   qpOASES::int_t nWSR = 100;
-  qp_problem.init(H_qpoases, g_qpoases, C_qpoases, NULL, NULL, constraint_lb_qpoases, constraint_ub_qpoases, nWSR);
+  qp_problem.init(H_qpoases, g_qpoases, C_qpoases, NULL, NULL, constraint_lb_qpoases, constraint_ub_qpoases, nWSR, NULL);
   int qp_status = qp_problem.getPrimalSolution(qp_solution);
   if (qp_status == qpOASES::SUCCESSFUL_RETURN) {
     std::cout << "succes!!" << std::endl;
     for (int i = 0; i < planning_horizon_; ++i) {
+      std::cout << "step: " << i << std::endl;
       std::cout << "FL fx: " << qp_solution[i + 0] << std::endl;
       std::cout << "FL fy: " << qp_solution[i + 1] << std::endl;
       std::cout << "FL fz: " << qp_solution[i + 2] << std::endl;
@@ -183,24 +193,29 @@ void ConvexMpc::CondensedFormulation() {
   // Set A
   // A_qp.block(0, 0, fsidx::state_count, fsidx::state_count) = Eigen::Matrix<double, fsidx::state_count, fsidx::state_count>::Identity();
 
+  std::vector<Eigen::Matrix<double,13,13>> powerMats(planning_horizon_);
+  powerMats[0].setIdentity();
+  for(int i = 1; i < planning_horizon_; i++) {
+    powerMats[i] = quadruped_.A_dt() * powerMats[i-1];
+  }
+
   std::cout << "---------- A_dt ----------" << std::endl;
   std::cout << quadruped_.A_dt() << std::endl;
   for (int i = 0; i < planning_horizon_; ++i) {
-    Eigen::Matrix<double, 13, 13> A_power;
-    A_power = quadruped_.A_dt();
-    for (int pow = 0; pow < i; ++pow) {
-      A_power = A_power * quadruped_.A_dt();
-    }
-    A_qp.block(i * fsidx::state_count, 0, fsidx::state_count, fsidx::state_count) = A_power;
-
+    A_qp.block(i * fsidx::state_count, 0, fsidx::state_count, fsidx::state_count) = powerMats[i];
   }
 
   // Set B
   for (int i = 0; i < planning_horizon_; ++i) {
     // Go across the columns.
+    Eigen::Matrix<double, 13, 13> A_power;
+    A_power.setIdentity();
     for (int j = 0; j < planning_horizon_; ++j) {
       // Go across the rows.
-      B_qp.block(j * fsidx::state_count, i * fc::control_count, fsidx::state_count, fc::control_count) = quadruped_.A_dt().pow(j - 1) * quadruped_.B_dt();
+      if (j >= i) {
+        int a_num = j - i;
+        B_qp.block(j * fsidx::state_count, i * fc::control_count, fsidx::state_count, fc::control_count) = powerMats[a_num] * quadruped_.B_dt();
+      }
     }
   }
 
@@ -246,6 +261,12 @@ void ConvexMpc::CondensedFormulation() {
                   0, -1, quadruped_.mu(),
                   0, 1, quadruped_.mu(),
                   0, 0, 1;
+
+  // constraints << quadruped_.mu(), 0, 1,
+  //                 -quadruped_.mu(), 0, 1,
+  //                 0, quadruped_.mu(), 1,
+  //                 0, -quadruped_.mu(), 1,
+  //                 0, 0, 1;
   
   for (int i = 0; i < planning_horizon_ * FloatingBase::Foot::foot_count; ++i) {
     C_.block(i * num_constraints_, i * 3, num_constraints_, 3) = constraints;
@@ -254,7 +275,8 @@ void ConvexMpc::CondensedFormulation() {
   std::cout << "---------- C ----------" << std::endl;
   std::cout << C_ << std::endl;
 
-  std::vector<int> foot_cs = ContactChecker(quadruped_.foot_poses());
+  // std::vector<int> foot_cs = ContactChecker(quadruped_.foot_poses());
+  std::vector<int> foot_cs{1, 1, 1, 1};
   std::cout << "foot size: " << foot_cs.size() << std::endl;
   for (const auto& cs : foot_cs) {
     std::cout << "foot cs: " << cs << std::endl;
@@ -270,7 +292,8 @@ void ConvexMpc::CondensedFormulation() {
       constraint_lb_[row + 1] = 0;
       constraint_lb_[row + 2] = 0;
       constraint_lb_[row + 3] = 0;
-      constraint_lb_[row + 4] =  fz_max / 10 * foot_cs[j];
+      // constraint_lb_[row + 4] =  fz_max / 10 * foot_cs[j];
+      constraint_lb_[row + 4] =  0;
 
       const double friction_ub = (quadruped_.mu() + 1) * fz_max * foot_cs[j];
       constraint_ub_[row] = friction_ub;
@@ -322,7 +345,7 @@ void ConvexMpc::ZeroTrajectory() {
     // Fill up a state.
     desired_state.x = 0;
     desired_state.y = 0;
-    desired_state.z = 0.333697;
+    desired_state.z = 0.433697;
     desired_state.x_dot = 0;
     desired_state.y_dot = 0;
     desired_state.z_dot = 0; // Should be zero to stabilize the height.

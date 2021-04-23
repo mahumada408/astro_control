@@ -11,7 +11,7 @@
 TEST(TestSuite, testCase1)
 {
     std::cout << "Testing!" << std::endl;
-    ConvexMpc controller(2, 0.03);
+    ConvexMpc controller(10, 0.03);
 
     
     // Update robot pose.
@@ -23,40 +23,44 @@ TEST(TestSuite, testCase1)
     foot_poses.resize(FloatingBase::Foot::foot_count);
     
     // FL
-    foot_position << -0.0614286, 0.131282, 0.0143182;
+    foot_position << 0.174542, 0.127191, 0.0306211;
     foot_rotation << 0.807443, 0, -0.589946,
                      0.00667612, 0.999936, 0.00913769,
                      0.589908, -0.0113167, 0.807391;
     foot.translation() = foot_position;
     foot.linear() = foot_rotation;
-    foot_poses[FloatingBase::Foot::fl] = foot;
+    // foot_poses[FloatingBase::Foot::fl] = foot;
+    foot_poses[FloatingBase::Foot::fl] = Eigen::Translation3d(foot_position.x(), foot_position.y(), foot_position.z()) * Eigen::Quaterniond(foot_rotation);
 
     // FR
-    foot_position << -0.0614286, -0.131282, 0.0143182;
+    foot_position << 0.174542, -0.127191, 0.0306211;
     foot_rotation << 0.807443, 0, -0.589946,
                     -0.00667691, 0.999936, -0.00913838,
                      0.589908, 0.0113177, 0.807391;
     foot.translation() = foot_position;
     foot.linear() = foot_rotation;
-    foot_poses[FloatingBase::Foot::fr] = foot;
+    // foot_poses[FloatingBase::Foot::fr] = foot;
+    foot_poses[FloatingBase::Foot::fr] = Eigen::Translation3d(foot_position.x(), foot_position.y(), foot_position.z()) * Eigen::Quaterniond(foot_rotation);
 
     // RL
-    foot_position << -0.422429, 0.131281, 0.0143182;
+    foot_position << -0.186458, 0.127191, 0.0306211;
     foot_rotation << 0.807443, 0, -0.589946,
                      0.00667461, 0.999936, 0.00913642,
                      0.589908, -0.0113148, 0.807391;
     foot.translation() = foot_position;
     foot.linear() = foot_rotation;
-    foot_poses[FloatingBase::Foot::rl] = foot;
+    // foot_poses[FloatingBase::Foot::rl] = foot;
+    foot_poses[FloatingBase::Foot::rl] = Eigen::Translation3d(foot_position.x(), foot_position.y(), foot_position.z()) * Eigen::Quaterniond(foot_rotation);
 
     // RR
-    foot_position << -0.422429, -0.131281, 0.0143182;
+    foot_position << -0.186458, -0.127191, 0.0306211;
     foot_rotation << 0.807443, 0, -0.589946,
                     -0.00667493, 0.999936, -0.00913664,
                      0.589908, 0.0113152, 0.807391;
     foot.translation() = foot_position;
     foot.linear() = foot_rotation;
-    foot_poses[FloatingBase::Foot::rr] = foot;
+    // foot_poses[FloatingBase::Foot::rr] = foot;
+    foot_poses[FloatingBase::Foot::rr] = Eigen::Translation3d(foot_position.x(), foot_position.y(), foot_position.z()) * Eigen::Quaterniond(foot_rotation);
 
     // base
     Eigen::Isometry3d base;
@@ -66,8 +70,9 @@ TEST(TestSuite, testCase1)
     base_rotation << 1, 0, 0,
                      0, 1, 0,
                      0, 0, 1;
-    base.translation() = base_position;
-    base.linear() = base_rotation;
+    // base.translation() = base_position;
+    // base.linear() = base_rotation;
+    base = Eigen::Translation3d(base_position.x(), base_position.y(), base_position.z()) * Eigen::Quaterniond(base_rotation);
 
     Eigen::Vector3d linear_vel;
     Eigen::Vector3d angular_vel;

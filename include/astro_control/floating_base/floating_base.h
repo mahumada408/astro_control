@@ -105,8 +105,6 @@ class FloatingBase {
 
   void DiscretizeDynamics();
 
-  Eigen::Matrix<double, 13, 1> RobotState() { return robo_state_; }
-
   Eigen::Matrix<double, 13, 13> A() { return A_continuous_; }
 
   Eigen::Matrix<double, 13, 12> B() { return B_continuous_; }
@@ -117,7 +115,7 @@ class FloatingBase {
 
   std::vector<Eigen::Isometry3d> foot_poses() { return foot_poses_; }
 
-  Eigen::Matrix<double, State_idx::state_count, 1> robot_pose() { return robo_state_; }
+  Eigen::Matrix<double, State_idx::state_count, 1> robot_state() { return robo_state_; }
 
   double mu() { return mu_; }
 

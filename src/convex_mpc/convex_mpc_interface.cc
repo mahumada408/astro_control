@@ -33,9 +33,12 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
       // FL
       foot_eig.translation().setZero();
       tf::poseMsgToEigen(msg.pose[i], calf);
-      foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
+      foot_eig.translation() = calf.translation() + calf.rotation() * foot;
       foot_eig.linear() = calf.rotation();
       foot_poses_[FloatingBase::Foot::fl] = foot_eig;
+      std::cout << "calf fl" << std::endl;
+      std::cout << calf.translation() << std::endl;
+      std::cout << calf.rotation() << std::endl;
       std::cout << "fl" << std::endl;
       std::cout << foot_eig.translation() << std::endl;
       std::cout << foot_eig.rotation() << std::endl;
@@ -44,9 +47,12 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
       // FR
       foot_eig.translation().setZero();
       tf::poseMsgToEigen(msg.pose[i], calf);
-      foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
+      foot_eig.translation() = calf.translation() + calf.rotation() * foot;
       foot_eig.linear() = calf.rotation();
       foot_poses_[FloatingBase::Foot::fr] = foot_eig;
+      std::cout << "calf fr" << std::endl;
+      std::cout << calf.translation() << std::endl;
+      std::cout << calf.rotation() << std::endl;
       std::cout << "fr" << std::endl;
       std::cout << foot_eig.translation() << std::endl;
       std::cout << foot_eig.rotation() << std::endl;
@@ -55,9 +61,12 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
       // RL
       foot_eig.translation().setZero();
       tf::poseMsgToEigen(msg.pose[i], calf);
-      foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
+      foot_eig.translation() = calf.translation() + calf.rotation() * foot;
       foot_eig.linear() = calf.rotation();
       foot_poses_[FloatingBase::Foot::rl] = foot_eig;
+      std::cout << "calf rl" << std::endl;
+      std::cout << calf.translation() << std::endl;
+      std::cout << calf.rotation() << std::endl;
       std::cout << "rl" << std::endl;
       std::cout << foot_eig.translation() << std::endl;
       std::cout << foot_eig.rotation() << std::endl;
@@ -66,9 +75,12 @@ void ConvexMpcInterface::GazeboPoses(const gazebo_msgs::LinkStates& msg) {
       // RR
       foot_eig.translation().setZero();
       tf::poseMsgToEigen(msg.pose[i], calf);
-      foot_eig.translation() = calf.translation() + calf.rotation().inverse() * foot;
+      foot_eig.translation() = calf.translation() + calf.rotation() * foot;
       foot_eig.linear() = calf.rotation();
       foot_poses_[FloatingBase::Foot::rr] = foot_eig;
+      std::cout << "calf rr" << std::endl;
+      std::cout << calf.translation() << std::endl;
+      std::cout << calf.rotation() << std::endl;
       std::cout << "rr" << std::endl;
       std::cout << foot_eig.translation() << std::endl;
       std::cout << foot_eig.rotation() << std::endl;

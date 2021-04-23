@@ -4,12 +4,11 @@
 #include <eigen3/unsupported/Eigen/MatrixFunctions>
 
 
-FloatingBase::FloatingBase() {
-  FloatingBase(mass_, i_xx_, i_yy_, i_zz_);
-}
+// FloatingBase::FloatingBase() {
+//   FloatingBase(mass_, i_xx_, i_yy_, i_zz_);
+// }
 
-FloatingBase::FloatingBase(double mass, double i_xx, double i_yy, double i_zz)
-    : mass_(mass), i_xx_(i_xx), i_yy_(i_yy), i_zz_(i_zz) {
+FloatingBase::FloatingBase() {
   // Set robot's body inertia.
   Eigen::Matrix<double, 3, 1> Id;
   Id << i_xx_, i_yy_, i_zz_;
@@ -24,6 +23,11 @@ FloatingBase::FloatingBase(double mass, double i_xx, double i_yy, double i_zz)
   B_continuous_.setZero();
   robo_state_.setZero();
   robo_state_[State_idx::g] = -9.81;
+
+  std::cout << "robot state constructor" << std::endl;
+  for (int i = 0; i < FloatingBase::State_idx::state_count; ++i) {
+    std::cout << robo_state_[i] << std::endl;
+  }
 }
 
 void FloatingBase::SetFootPositions(const std::vector<Eigen::Isometry3d>& foot_poses) {
@@ -78,6 +82,8 @@ void FloatingBase::SetRobotPose(const Eigen::Isometry3d& robo_pose, const Eigen:
   std::cout << "--------- base velocities -----------" << std::endl;
   std::cout <<  robo_state_[State_idx::x_dot] << " | " << robo_state_[State_idx::y_dot] << " | " << robo_state_[State_idx::z_dot] << std::endl;
   std::cout <<  robo_state_[State_idx::roll_dot] << " | " << robo_state_[State_idx::pitch_dot] << " | " << robo_state_[State_idx::yaw_dot] << std::endl;
+  std::cout << "--------- g -----------" << std::endl;
+  std::cout << robo_state_[State_idx::g] << std::endl;
   std::cout << "--------- r_yaw -----------" << std::endl;
   std::cout << r_yaw_ << std::endl;
 }

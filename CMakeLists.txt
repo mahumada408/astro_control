@@ -38,10 +38,10 @@ target_link_libraries(astro_teleop_key ${catkin_LIBRARIES})
 # Unit tests
 find_package(rostest REQUIRED)
 
-add_rostest_gtest(astro_tests launch/gtest.test src/test/test_qp.cc)
-target_link_libraries(astro_tests
+add_rostest_gtest(floating_base_tests launch/gtest_floating_base.test src/test/test_floating_base.cc)
+target_link_libraries(floating_base_tests
                       ${catkin_LIBRARIES}
-                      convex_mpc)
+                      floating_base)
 
 add_rostest_gtest(astro_tests launch/gtest.test src/test/test_qp.cc)
 target_link_libraries(astro_tests

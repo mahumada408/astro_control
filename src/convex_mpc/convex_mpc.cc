@@ -251,7 +251,7 @@ void ConvexMpc::CondensedFormulation() {
   std::cout << L << std::endl;
 
   H_ = 2 * (B_qp.transpose() * L * B_qp + K);
-  g_ = 2 * B_qp.transpose() * L * (A_qp * quadruped_.robot_pose() - StateRef());
+  g_ = 2 * B_qp.transpose() * L * (A_qp * quadruped_.robot_state() - StateRef());
 
   // Constraint matrix;
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> constraints;

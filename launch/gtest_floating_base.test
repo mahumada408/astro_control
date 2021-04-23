@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="astro_control" type="floating_base_tests" name="floating_base_tests" />
+	<test test-name="floating_base_tests" pkg="astro_control" type="floating_base_tests" name="floating_base_tests"/>
+</launch>

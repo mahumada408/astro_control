@@ -25,8 +25,13 @@ class ConvexMpc {
     // Update robot pose.
     void UpdateRobotPose(const std::vector<Eigen::Isometry3d>& foot_poses, const Eigen::Isometry3d& base_pose, const Eigen::Vector3d& linear_velocity, const Eigen::Vector3d& angular_velocity);
 
+    // Helper on here for unit testing.
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> GetHessianMatrix() { return H_; }
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> GetGMatrix() { return g_; }
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> GetCMatrix() { return C_; }
+
   private:
-    // Here, we convert the A and B matricies to the A_qp and B_qp matricies.
+    // Here, we convert the A and B matricies to the A_qp and B_qp matricies, then generate the H, g, and C matricies.
     // Formulation for condenced QP can be found here:
     // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.385.6703&rep=rep1&type=pdf
     void CondensedFormulation();

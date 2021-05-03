@@ -261,12 +261,6 @@ void ConvexMpc::CondensedFormulation() {
                   0, -1, quadruped_.mu(),
                   0, 1, quadruped_.mu(),
                   0, 0, 1;
-
-  // constraints << quadruped_.mu(), 0, 1,
-  //                 -quadruped_.mu(), 0, 1,
-  //                 0, quadruped_.mu(), 1,
-  //                 0, -quadruped_.mu(), 1,
-  //                 0, 0, 1;
   
   for (int i = 0; i < planning_horizon_ * FloatingBase::Foot::foot_count; ++i) {
     C_.block(i * num_constraints_, i * 3, num_constraints_, 3) = constraints;

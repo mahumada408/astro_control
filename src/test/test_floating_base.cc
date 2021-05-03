@@ -10,6 +10,7 @@
 // Declare a test
 TEST(TestSuite, testCase1)
 {
+    // Test base state (position and velocity).
     std::cout << "Testing!" << std::endl;
     FloatingBase dut;
 
